@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block conteudo %}
+
+<div class="carrosel d-flex overflow-hidden">
+    <div id="carouselExampleInterval" class="carousel slide" data-bs-ride="carousel">
+        <div class="carousel-inner">
+            <div class="carousel-item active bg-dark" data-bs-interval="2000">
+                <img src="/static/img/carousel-1.jpg" class="d-block w-100 opacity-40" alt="...">
+            </div>
+            <div class="carousel-item bg-dark" data-bs-interval="2000">
+                <img src="/static/img/carousel-2.jpg" class="d-block w-100 opacity-40" alt="...">
+            </div>
+            <div class="carousel-item bg-dark" data-bs-interval="2000">
+                <img src="/static/img/carousel-3.jpg" class="d-block w-100 opacity-40" alt="...">
+            </div>
+        </div>
+        <button class="carousel-control-prev" type="button" data-bs-target="#carouselExampleInterval"
+                data-bs-slide="prev">
+            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Previous</span>
+        </button>
+        <button class="carousel-control-next" type="button" data-bs-target="#carouselExampleInterval"
+                data-bs-slide="next">
+            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+            <span class="visually-hidden">Next</span>
+        </button>
+    </div>
+
+    <div class="w-100 h-100 position-absolute d-flex flex-column justify-content-evenly">
+        <p class="title-senai text-white display-1 text-center">Conheça o Japão</p>
+        <p class="subtitle-senai text-white display-6 text-center">Confira as
+            <mark>melhores</mark>
+            imagens
+        </p>
+    </div>
+</div>
+
+<div class="cursos">
+    <div class="curso-text col-8 d-flex flex-column justify-content-center">
+        <h1 class="title2"><mark>Fluência em Japonês.</mark></h1>
+        <p>Aprenda já como ser fluente em japonês para aquela excursão que você tanto sonha.</p>
+    </div>
+
+    <div class="curso-img bg-dark col-4">
+        <img src="/static/img/escola-japao.jpg" class="w-100 h-100">
+    </div>
+</div>
+
+<div class="cursos">
+     <div class="curso-img bg-dark col-4">
+        <img src="/static/img/curso-japao.jpg" class="w-100 h-100">
+    </div>
+
+    <div class="curso-text col-8 d-flex flex-column justify-content-center  ">
+        <h1><mark>Conheça o Japão</mark></h1>
+        <p>Aprenda a cultura japonêsa e suas práticas</p>
+    </div>
+
+
+</div>
+
+
+{% endblock %}
