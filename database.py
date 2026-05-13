@@ -4,14 +4,10 @@ from flask_login import UserMixin
 from sqlalchemy import create_engine, String, Integer, func, Column, DateTime, Float
 from sqlalchemy.orm import sessionmaker, scoped_session, declarative_base
 
-# TENTE ESTA STRING PRIMEIRO (SEM SENHA):
+
 engine = create_engine('mysql+pymysql://root@localhost:3306/flashlog')
 
-# SE NÃO FUNCIONAR, COMENTE A DE CIMA E DESCOMENTE A DE BAIXO (COM SENHA 'root'):
-# engine = create_engine('mysql+pymysql://root:root@localhost:3306/flashlog')
 
-# SE VOCÊ USA XAMPP/WAMP, TENTE ESTA:
-# engine = create_engine('mysql+pymysql://root:@localhost:3306/flashlog')
 
 session_factory = sessionmaker(bind=engine)
 db_session = scoped_session(session_factory)
