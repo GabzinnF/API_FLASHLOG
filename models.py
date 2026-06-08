@@ -23,11 +23,12 @@ class Movimentacao(Base):
     tipo = Column(String(70), nullable=False)
     centro_id = Column(Integer, ForeignKey('centro_distribuicaos.id'), nullable=False)
 
-    def serialize(self):
+    def serialize(self, centro):
         dados={
             'id':self.id,
             'id_encomenda':self.encomenda_id,
-            'localizacao':self.centro_id,
+            'tipo':self.tipo,
+            'localizacao':centro.serialize(),
             'criado_em' : self.criado_em,
         }
         return dados
@@ -116,25 +117,17 @@ class Emcomenda(Base):
 class Destinatario(Base):
     __tablename__ = 'destinatarios'
     id = Column(Integer, primary_key=True)
-    proprietario_enco = Column(String(70), nullable=False)
+    nome = Column(String(100), nullable=False)
+    cidade = Column(String(100), nullable=False)
+    estado = Column(String(100), nullable=False)
+
 
     def serialize(self):
-        dados={
-            'id':self.id,
-            'proprietario_enco':self.nome,
-
-        }
-        return dados
-
-    def serialize(self):
-        dados={
-            'id':self.id,
-            'nome':self.nome,
-            'valor':self.valor,
-            'descricao':self.descricao,
-            'marca':self.marca,
-            'material':self.material,
-            'cor':self.cor,
+        dados = {
+            'id': self.id,
+            'nome': self.nome,
+            'cidade': self.cidade,
+            "estado": self.estado
         }
         return dados
 

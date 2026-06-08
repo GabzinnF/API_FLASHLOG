@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from models import db_session, Funcionario, Emcomenda, \
-    Movimentacao, Cliente, Centro_distribuicao  # Certifique-se que o database.py está na mesma pasta
+    Movimentacao, Cliente, Centro_distribuicao, Destinatario  # Certifique-se que o database.py está na mesma pasta
 
 app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = 'batata'  # Mude para algo seguro em produção
@@ -30,6 +30,25 @@ def tela_login():
 @app.route('/cadastro')
 def tela_cadastro():
     return render_template('cadastro.html')
+
+@app.route('/movimentacao')
+def lista_movimentacao():
+    # Rota que estava faltando e causava o BuildError
+    db = db_session()
+    try:
+        api_movimentacao = select(Movimentacao)
+        result = db_session.execute(api_movimentacao).scalars().all()
+        movimentacoes = []
+        for movimentacao in result:
+            sql_centro = select(Centro_distribuicao).where(Centro_distribuicao.id == movimentacao.centro_id)
+            centro = db_session.execute(sql_centro).scalars().one_or_none()
+            movimentacoes.append(movimentacao.serialize(centro))
+
+
+        print(result)
+        return jsonify({"movimentacoes": movimentacoes}), 200
+    finally:
+        db.close()
 
 
 @app.route('/funcionarios')
@@ -59,7 +78,22 @@ def clientes():
         for cliente in result:
             clientes.append(cliente.serialize())
         print(result)
-        return jsonify({"Clientes": clientes}), 200
+        return jsonify({"clientes": clientes}), 200
+    finally:
+        db.close()
+
+
+@app.route('/destinatario')
+def lista_destinatario():
+    db = db_session()
+    try:
+        api_destinatario = select(Destinatario)
+        result = db_session.execute(api_destinatario).scalars().all()
+        destinatario = []
+        for destinatarios in result:
+            destinatario.append(destinatarios.serialize())
+        print(result)
+        return jsonify({"destinatarios": destinatario}), 200
     finally:
         db.close()
 @app.route('/unidades')
@@ -73,7 +107,7 @@ def unidades_centro():
         for centro_distribuicao in result:
             centros.append(centro_distribuicao.serialize())
         print(result)
-        return jsonify({"Centro_distribuição": centros}), 200
+        return jsonify({"centro_distribuicao": centros}), 200
     finally:
         db.close()
 @app.route('/encomendas')
@@ -291,8 +325,8 @@ def centro_distribuicao():
 
     return jsonify(dados)
 
-@app.route('/movimentacao', methods=['GET', 'POST'])
-def movimentacao():
+@app.route('/cadastro_movimentacao', methods=['GET', 'POST'])
+def cadastro_movimentacao():
     db = db_session()
     dados = request.get_json()
     try:
@@ -312,8 +346,14 @@ def movimentacao():
             else:
                 if ultima_movimentacao.tipo == 'saida':
                     tipo = 'chegada'
+                    if ultima_movimentacao.centro_id == centro_id:
+                        return jsonify({
+                            "msg": "Não pode chegar no mesmo lugar que saiu",
+                        })
                 else:
                     tipo = 'saida'
+
+
 
             nova_movimentacao=Movimentacao(
                tipo=tipo,encomenda_id=encomenda_id,centro_id=centro_id
@@ -336,7 +376,39 @@ def movimentacao():
         return jsonify({"Erro": str(e)}), 500
     return jsonify(dados)
 
+def cadastro_destinatario():
+    db = db_session()
+    dados = request.get_json()
+    try:
+        if request.method == 'POST':
+            json_destinatario = request.get_json()
+            nome = json_destinatario.get('nome')
+            cidade = json_destinatario.get('cidade')
+            estado = json_destinatario.get('estado')
 
+            if not cidade or not estado:
+                return jsonify({"msg": "Preencher todos os campos"})
+
+            novo_destinatario = Destinatario(
+                nome=nome, cidade=cidade, estado=estado)
+            db.add(novo_destinatario)
+            db.commit()
+            return jsonify({
+                "msg": "Destinatario cadastrado com sucesso",
+                'destinatario': {
+                    "id": novo_destinatario.id,
+                    'nome': novo_destinatario.nome,
+                    'cidade': novo_destinatario.cidade,
+                    'estado': novo_destinatario.estado
+                }
+
+            }), 201
+
+    except Exception as e:
+        db.rollback()
+        return jsonify({"Erro": str(e)}), 500
+
+    return jsonify(dados)
 def gerar_codigo_unico(db):
     data = datetime.datetime.now()
     alfabeto = ["a", "b", "c", "d", "e", "f", "g", "h",
@@ -365,4 +437,4 @@ def protegido():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0')
