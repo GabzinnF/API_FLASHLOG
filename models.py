@@ -85,18 +85,18 @@ class Emcomenda(Base):
     codigo_rastreio = Column(String(100), nullable=False)
     fragilidade = Column(String(100), nullable=False)
     tipo = Column(String(100), nullable=False)
-    remetente = Column(String(100), nullable=False)
     cliente_id = Column(String ,ForeignKey('clientes.id'), nullable=False)
+    remetente_id = Column(String ,ForeignKey('remetentes.id'), nullable=False)
 
-    def serialize(self, cliente):
+    def serialize(self, cliente=None, remetente=None):
         dados={
             'id':self.id,
             'nome':self.nome,
             'codigo_rastreio':self.codigo_rastreio,
             'fragilidade':self.fragilidade,
             'tipo':self.tipo,
-            'remetente':self.remetente,
-            'destinatario':cliente.serialize()
+            'remetente':remetente.serialize() if remetente else self.remetente_id,
+            'destinatario':cliente.serialize() if cliente else self.cliente_id
 
 
         }
@@ -114,8 +114,8 @@ class Emcomenda(Base):
     def set_password(self, password):
         self.senha = generate_password_hash(password)
 
-class Destinatario(Base):
-    __tablename__ = 'destinatarios'
+class Remetente(Base):
+    __tablename__ = 'remetentes'
     id = Column(Integer, primary_key=True)
     nome = Column(String(100), nullable=False)
     cidade = Column(String(100), nullable=False)

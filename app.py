@@ -8,7 +8,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
 from models import db_session, Funcionario, Emcomenda, \
-    Movimentacao, Cliente, Centro_distribuicao, Destinatario  # Certifique-se que o database.py está na mesma pasta
+    Movimentacao, Cliente, Centro_distribuicao, Remetente  # Certifique-se que o database.py está na mesma pasta
 
 app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = 'batata'  # Mude para algo seguro em produção
@@ -45,11 +45,11 @@ def lista_movimentacao():
             movimentacoes.append(movimentacao.serialize(centro))
 
 
+
         print(result)
         return jsonify({"movimentacoes": movimentacoes}), 200
     finally:
         db.close()
-
 
 @app.route('/funcionarios')
 def funcionarios():
@@ -83,17 +83,17 @@ def clientes():
         db.close()
 
 
-@app.route('/destinatario')
-def lista_destinatario():
+@app.route('/remetente')
+def lista_remetente():
     db = db_session()
     try:
-        api_destinatario = select(Destinatario)
-        result = db_session.execute(api_destinatario).scalars().all()
-        destinatario = []
-        for destinatarios in result:
-            destinatario.append(destinatarios.serialize())
+        api_remetente = select(Remetente)
+        result = db_session.execute(api_remetente).scalars().all()
+        remetente = []
+        for remetentes in result:
+            remetente.append(remetentes.serialize())
         print(result)
-        return jsonify({"destinatarios": destinatario}), 200
+        return jsonify({"remetentes": remetente}), 200
     finally:
         db.close()
 @app.route('/unidades')
@@ -122,8 +122,11 @@ def encomendas():
         encomendas = []
         for encomenda in result:
             sql_cliente = select(Cliente).where(Cliente.id == encomenda.cliente_id)
+            sql_remetente = select(Remetente).where(Remetente.id == encomenda.remetente_id)
             cliente = db_session.execute(sql_cliente).scalars().one_or_none()
-            encomendas.append(encomenda.serialize(cliente))
+            remetente = db_session.execute(sql_remetente).scalars().one_or_none()
+            encomendas.append(encomenda.serialize(cliente, remetente))
+
 
 
         return jsonify({"encomendas": encomendas}), 200
@@ -251,7 +254,7 @@ def cadastro_encomenda():
     nome = json_encomenda.get('nome')
     fragilidade = json_encomenda.get('fragilidade')
     tipo = json_encomenda.get('tipo')
-    remetente = json_encomenda.get('remetente')
+    remetente_id = json_encomenda.get('remetente_id')
     cliente_id = json_encomenda.get('cliente_id')
 
     if not nome or not fragilidade or not tipo:
@@ -265,7 +268,7 @@ def cadastro_encomenda():
             nome=nome,
             fragilidade=fragilidade,
             tipo=tipo,
-            remetente=remetente,
+            remetente_id=remetente_id,
             cliente_id=cliente_id
         )
 
@@ -280,7 +283,8 @@ def cadastro_encomenda():
                         "nome" : nova_encomenda.nome,
                         "fragilidade" : nova_encomenda.fragilidade,
                         "tipo" : nova_encomenda.tipo,
-                        "cliente_id" : nova_encomenda.cliente_id
+                        "cliente_id" : nova_encomenda.cliente_id,
+                        "rementente_id" : nova_encomenda.remetente_id
                      }), 201
 
     except Exception as e:
@@ -375,31 +379,31 @@ def cadastro_movimentacao():
         db.rollback()
         return jsonify({"Erro": str(e)}), 500
     return jsonify(dados)
-
-def cadastro_destinatario():
+@app.route('/cadastro_remetente',methods=['POST'])
+def cadastro_remetente():
     db = db_session()
     dados = request.get_json()
     try:
         if request.method == 'POST':
-            json_destinatario = request.get_json()
-            nome = json_destinatario.get('nome')
-            cidade = json_destinatario.get('cidade')
-            estado = json_destinatario.get('estado')
+            json_remetente = request.get_json()
+            nome = json_remetente.get('nome')
+            cidade = json_remetente.get('cidade')
+            estado = json_remetente.get('estado')
 
             if not cidade or not estado:
                 return jsonify({"msg": "Preencher todos os campos"})
 
-            novo_destinatario = Destinatario(
+            novo_remetente = Remetente(
                 nome=nome, cidade=cidade, estado=estado)
-            db.add(novo_destinatario)
+            db.add(novo_remetente)
             db.commit()
             return jsonify({
-                "msg": "Destinatario cadastrado com sucesso",
-                'destinatario': {
-                    "id": novo_destinatario.id,
-                    'nome': novo_destinatario.nome,
-                    'cidade': novo_destinatario.cidade,
-                    'estado': novo_destinatario.estado
+                "msg": "Remetente cadastrado com sucesso",
+                'remetente': {
+                    "id": novo_remetente.id,
+                    'nome': novo_remetente.nome,
+                    'cidade': novo_remetente.cidade,
+                    'estado': novo_remetente.estado
                 }
 
             }), 201
@@ -409,6 +413,40 @@ def cadastro_destinatario():
         return jsonify({"Erro": str(e)}), 500
 
     return jsonify(dados)
+@app.route('/rastreio',methods=['POST'])
+def rastreio_encomenda():
+    db = db_session()
+    try:
+        json_rastreio = request.get_json()
+        codigo = json_rastreio.get('codigo')
+
+        #traz a encomenda de acordo com o codigo
+        rastrear_encomenda = select(Emcomenda).where(Emcomenda.codigo_rastreio == codigo)
+        encomenda = db_session.execute(rastrear_encomenda).scalars().one_or_none()
+
+        #traz as movimentacoes da encomenda de acordo com seu id
+        rastrear_id_encomenda = select(Movimentacao).where(Movimentacao.encomenda_id == encomenda.id)
+        movimentacao_encomenda = db_session.execute(rastrear_id_encomenda).scalars().all()
+
+        movimentacoes = []
+        for movimentacao in movimentacao_encomenda:
+            sql_centro = select(Centro_distribuicao).where(Centro_distribuicao.id == movimentacao.centro_id)
+            centro = db_session.execute(sql_centro).scalars().one_or_none()
+            movimentacoes.append(movimentacao.serialize(centro))
+
+
+
+
+        print(encomenda)
+        return jsonify({"encomenda" : encomenda.serialize(),
+                        "movimentacoes" : movimentacoes
+                        })
+    except Exception as e:
+        db.rollback()
+        return jsonify({"Erro": str(e)}), 500
+
+
+
 def gerar_codigo_unico(db):
     data = datetime.datetime.now()
     alfabeto = ["a", "b", "c", "d", "e", "f", "g", "h",
