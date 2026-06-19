@@ -23,13 +23,13 @@ class Movimentacao(Base):
     tipo = Column(String(70), nullable=False)
     centro_id = Column(Integer, ForeignKey('centro_distribuicaos.id'), nullable=False)
 
-    def serialize(self, centro):
+    def serialize(self, centro=None):
         dados={
             'id':self.id,
             'id_encomenda':self.encomenda_id,
             'tipo':self.tipo,
-            'localizacao':centro.serialize(),
-            'criado_em' : self.criado_em,
+            'localizacao':centro.serialize()  if centro else self.centro_id,
+            'criado_em' : self.criado_em.strftime('%d/%m/%Y %H:%M'),
         }
         return dados
 
@@ -81,7 +81,6 @@ class Cliente(Base):
 class Emcomenda(Base):
     __tablename__ = 'encomendas'
     id = Column(Integer, primary_key=True)
-    nome = Column(String(70), nullable=False)
     codigo_rastreio = Column(String(100), nullable=False)
     fragilidade = Column(String(100), nullable=False)
     tipo = Column(String(100), nullable=False)
@@ -91,28 +90,18 @@ class Emcomenda(Base):
     def serialize(self, cliente=None, remetente=None):
         dados={
             'id':self.id,
-            'nome':self.nome,
             'codigo_rastreio':self.codigo_rastreio,
             'fragilidade':self.fragilidade,
             'tipo':self.tipo,
             'remetente':remetente.serialize() if remetente else self.remetente_id,
-            'destinatario':cliente.serialize() if cliente else self.cliente_id
+            'cliente':cliente.serialize() if cliente else self.cliente_id
 
 
         }
         return dados
 
-    def set_senha_hash(self, senha):
-        self.senha_hash = generate_password_hash(senha)
-
-    def check_password_hash(self, senha):
-        return check_password_hash(self.senha_hash, senha)
-
     def __repr__(self):
-        return f'<Emcomenda: {self.nome}>'
-
-    def set_password(self, password):
-        self.senha = generate_password_hash(password)
+        return f'<Emcomenda: {self.serialize()}>'
 
 class Remetente(Base):
     __tablename__ = 'remetentes'
@@ -145,20 +134,15 @@ class Funcionario(Base, UserMixin):
             'nome':self.nome,
             'email':self.email,
             'cpf':self.cpf,
+            'senha':self.senha
         }
         return dados
 
-    def set_senha_hash(self, senha):
-        self.senha_hash = generate_password_hash(senha)
 
-    def check_password_hash(self, senha):
-        return check_password_hash(self.senha_hash, senha)
+
 
     def __repr__(self):
         return f'<Funcionario: {self.nome}>'
-
-    def set_password(self, password):
-        self.senha = generate_password_hash(password)
 
 
 # Criar tabelas dentro de um bloco try para identificar o erro de conexão exato
