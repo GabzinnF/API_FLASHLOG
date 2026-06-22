@@ -273,7 +273,7 @@ def cadastro_funcionario():
             if existe_email:
                 return jsonify({"msg": "Email ja existente"})
 
-            if len(cpf) > 13 or len(cpf) < 13:
+            if len(cpf) > 11 or len(cpf) < 11:
                 return jsonify({"msg": "cpf invalido"})
 
             if existe_cpf:
@@ -381,7 +381,7 @@ def cadastro_movimentacao():
             centro_id = json_movimentacao.get('centro_id')
             print("luciano lindo", encomenda_id, centro_id)
             if not encomenda_id or not centro_id:
-                return jsonify({"msg": "Preencher todos os campos"})
+                return jsonify({"msg": "Preencher todos os campos"}), 400
             # Verificar a ultima movimentação da encomenda
             # Fazer um select para trazer essa movimentação
             sql_movimentacao = (select(Movimentacao, Centro_distribuicao).where(Movimentacao.encomenda_id == encomenda_id)
@@ -389,9 +389,9 @@ def cadastro_movimentacao():
                                 .order_by(Movimentacao.criado_em.desc()).limit(1))
             ultima_movimentacao = db_session.execute(sql_movimentacao).tuples().one_or_none()
 
-            movs = []
-            for item in ultima_movimentacao:
-                movs.append(item.serialize())
+            print("hoje",ultima_movimentacao)
+
+
 
             comparar_cidade = (
                 select(Cliente, Emcomenda).where(Emcomenda.id == encomenda_id)
@@ -399,11 +399,12 @@ def cadastro_movimentacao():
             )
             encomenda_cliente = db_session.execute(comparar_cidade).scalars().one_or_none()
 
-            print(movs[0]["localizacao"])
-
             if ultima_movimentacao is None:
                 tipo = 'saida'
             else:
+                movs = []
+                for item in ultima_movimentacao:
+                    movs.append(item.serialize())
                 if movs[0]["tipo"] == 'saida':
 
                     tipo = 'chegada'
@@ -435,6 +436,7 @@ def cadastro_movimentacao():
 
     except Exception as e:
         db.rollback()
+        print("erro", e)
         return jsonify({"Erro": str(e)}), 500
 
 
